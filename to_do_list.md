@@ -9,6 +9,8 @@ M2: Todos los módulos funcionando
 
 M4:
 
+- Encapsular código de communication_with_client en funciones más chicas
+
 - Agregar documentación a las funciones
 
 - Corregir los magic numbers y las cosas hardcodeadas.

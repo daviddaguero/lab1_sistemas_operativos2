@@ -52,9 +52,10 @@ void set_signal_handlers();
 ClientInfo* initialize_clients_array();
 int config_tcp_socket(struct sockaddr_in6 server_addr);
 int save_client_socket_in_clients_array(int client_socket);
-void max_clients_reached();
+int max_clients_reached();
 void remove_client();
 int config_udp_socket();
+int send_refuge_summary(struct sockaddr_storage client_addr, socklen_t client_addr_len);
 
 int server_socket, shmid;
 int fd[2]; // For pipe communication
@@ -598,48 +599,41 @@ void udp_connections() {
         }
 
         // Convert client address to string
-        char client_ip[INET6_ADDRSTRLEN];
-        if (client_addr.ss_family == AF_INET6) {
-            struct sockaddr_in6 *addr_ipv6 = (struct sockaddr_in6 *)&client_addr;
-            inet_ntop(AF_INET6, &(addr_ipv6->sin6_addr), client_ip, INET6_ADDRSTRLEN);
-        } else if (client_addr.ss_family == AF_INET) {
-            struct sockaddr_in *addr_ipv4 = (struct sockaddr_in *)&client_addr;
-            inet_ntop(AF_INET, &(addr_ipv4->sin_addr), client_ip, INET_ADDRSTRLEN);
-        } else {
-            strcpy(client_ip, "Unknown");
-        }
+        // char client_ip[INET6_ADDRSTRLEN];
+        // if (client_addr.ss_family == AF_INET6) {
+        //     struct sockaddr_in6 *addr_ipv6 = (struct sockaddr_in6 *)&client_addr;
+        //     inet_ntop(AF_INET6, &(addr_ipv6->sin6_addr), client_ip, INET6_ADDRSTRLEN);
+        // } else if (client_addr.ss_family == AF_INET) {
+        //     struct sockaddr_in *addr_ipv4 = (struct sockaddr_in *)&client_addr;
+        //     inet_ntop(AF_INET, &(addr_ipv4->sin_addr), client_ip, INET_ADDRSTRLEN);
+        // } else {
+        //     strcpy(client_ip, "Unknown");
+        // }
 
         // Print received message
         buffer[bytes_received] = '\0';
         printf("Process %d: Received username from UDP client: %s\n", getpid(), buffer);
 
-        // Enviar el resumen del refugio al cliente
-        FILE *json_file = fopen("refuge_summary.json", "r");
-        if (json_file == NULL) {
-            perror("Error opening JSON file");
-            continue; // No se puede abrir el archivo JSON, continuar con la siguiente iteración del bucle
+        if(send_refuge_summary(client_addr, client_addr_len)) {
+            // Error sending summary to client
+            continue;
         }
 
-        // Leer el contenido del archivo JSON en un búfer
-        fseek(json_file, 0, SEEK_END);
-        long file_size = ftell(json_file);
-        rewind(json_file);
-        if (fread(buffer, 1, file_size, json_file) != file_size) {
-            perror("Error reading JSON file");
-            fclose(json_file);
-            continue; // Error al leer el archivo JSON, continuar con la siguiente iteración del bucle
-        }
-        fclose(json_file);
-
-        // Enviar el contenido JSON al cliente
-        if (sendto(udp_socket, buffer, file_size, 0, (struct sockaddr *)&client_addr, client_addr_len) == -1) {
-            perror("Error sending JSON to client");
-            continue; // Error al enviar el JSON al cliente, continuar con la siguiente iteración del bucle
-        }
-        printf("Sent JSON to client %s\n", client_ip);
+        // printf("Sent JSON to client %s\n", client_ip);
+        printf("Sent JSON to UDP client\n");
     }
 }
 
+/**
+ * infected_log
+ * 
+ * This function logs infection alerts to the file "refuge.log". It records the current time and a message indicating 
+ * a possible infection alert for a specific entry.
+ * 
+ * @param time_str A string representing the current time.
+ * @param current_entry A string representing the current entry where the infection alert occurred.
+ * @return Returns 0 upon successful logging, or 1 if an error occurs while opening the log file.
+ */
 int infected_log(char *time_str, char *current_entry) {
     // Open the log file
     FILE *log_file = fopen("refuge.log", "a"); // File pointer for the log file
@@ -652,6 +646,13 @@ int infected_log(char *time_str, char *current_entry) {
     return 0;
 }
 
+/**
+ * set_signal_handlers
+ * 
+ * This function sets up signal handlers for the program. It assigns specific handler functions to handle the 
+ * SIGINT and SIGUSR1 signals.
+ * 
+ */
 void set_signal_handlers() {
     // Set up signal handler for SIGINT (Control+C)
     signal(SIGINT, sigint_handler);
@@ -659,6 +660,15 @@ void set_signal_handlers() {
     signal(SIGUSR1, sigusr1_handler);
 }
 
+/**
+ * initialize_clients_array
+ * 
+ * This function initializes a shared memory segment to store an array of client information. Shared memory is used 
+ * to allow both the parent and child processes to access the same clients array. The function creates a shared memory 
+ * segment, attaches it to the process's address space, and initializes the clients array with default values.
+ * 
+ * @return A pointer to the shared memory segment containing the initialized clients array.
+ */
 ClientInfo* initialize_clients_array() {
     // I use shared memory because I need that the parent and the childreen have access to the same clients array
     // Create a shared memory identifier
@@ -676,6 +686,17 @@ ClientInfo* initialize_clients_array() {
     return clients;
 }
 
+/**
+ * config_tcp_socket
+ * 
+ * This function configures a TCP server socket. It creates a server socket, sets options to
+ * allow both IPv4 and IPv6 connections, binds the socket to the specified IPv6 address
+ * and port, and starts listening for incoming connections.
+ * 
+ * @param server_addr An IPv6 server address structure containing the IP address and port to bind the server socket to.
+ * @return Returns 0 upon successful configuration of the TCP server socket, or 1 if an error occurs during socket creation,
+ * setting socket options, binding the socket, or listening for connections.
+ */
 int config_tcp_socket(struct sockaddr_in6 server_addr) {
     // Create server socket for IPv6
     server_socket = socket(AF_INET6, SOCK_STREAM, 0);
@@ -717,6 +738,16 @@ int config_tcp_socket(struct sockaddr_in6 server_addr) {
     return 0;
 }
 
+/**
+ * save_client_socket_in_clients_array
+ * 
+ * This function saves a client socket in the clients array. It searches for an empty space in the clients array,
+ * and if found, assigns the client socket to that space. The function is designed to be thread-safe by using a
+ * semaphore (`mutex`) to protect the critical region where the clients array is accessed.
+ * 
+ * @param client_socket The client socket to be saved in the clients array.
+ * @return Returns the index of the position in the clients array where the client socket is saved, or `MAX_CLIENTS` if the clients array is full.
+ */
 int save_client_socket_in_clients_array(int client_socket) {
     int i;
     // Search for an empty space in the clients array
@@ -737,13 +768,26 @@ int save_client_socket_in_clients_array(int client_socket) {
     return i;
 }
 
-void max_clients_reached() {
+/**
+ * max_clients_reached
+ * 
+ * This function is called when the maximum number of clients allowed has been reached. It receives the username
+ * and password from the client (if any), sends a message indicating that the maximum number of clients has been reached,
+ * and closes the client socket.
+ * 
+ * @return Returns 0 upon successful sending of the maximum clients message, or 1 if an error occurs while sending the message.
+ */
+int max_clients_reached() {
     int bytes_received;
     char aux_buffer[BUFFER_SIZE]; // Aux buffer to receive the username and password from the client before sending the message
     bytes_received = recv(client_socket, aux_buffer, BUFFER_SIZE, 0); // Receive the username and the password
     char *max_clients_msg = "Maximum number of clients reached. Please try again later.\n";
-    send(client_socket, max_clients_msg, strlen(max_clients_msg), 0);
+    if(send(client_socket, max_clients_msg, strlen(max_clients_msg), 0) == -1) {
+        perror("Error sending JSON to client");
+        return 1;
+    }
     close(client_socket);
+    return 0;
 }
 
 void remove_client() {
@@ -785,4 +829,41 @@ int config_udp_socket() {
     }
 
     return 0;
+}
+
+int send_refuge_summary(struct sockaddr_storage client_addr, socklen_t client_addr_len) {
+    char buffer[BUFFER_SIZE];
+    
+    // Open the JSON file
+    FILE *json_file = fopen("refuge_summary.json", "r");
+    if (json_file == NULL) {
+        perror("Error opening JSON file");
+        return 1; // Cannot open the JSON file
+    }
+
+    // Read the content of the JSON file into a buffer
+    fseek(json_file, 0, SEEK_END);
+    long file_size = ftell(json_file);
+    rewind(json_file);
+
+    if (file_size > BUFFER_SIZE) {
+        fprintf(stderr, "Error: JSON file size exceeds buffer capacity\n");
+        fclose(json_file);
+        return 1; // JSON file size exceeds buffer capacity
+    }
+
+    if (fread(buffer, 1, file_size, json_file) != file_size) {
+        perror("Error reading JSON file");
+        fclose(json_file);
+        return 1; // Error reading the JSON file
+    }
+    fclose(json_file);
+
+    // Send the JSON content to the client
+    if (sendto(udp_socket, buffer, file_size, 0, (struct sockaddr *)&client_addr, client_addr_len) == -1) {
+        perror("Error sending JSON to client");
+        return 1; // Error sending JSON to the client
+    }
+
+    return 0; // Success
 }

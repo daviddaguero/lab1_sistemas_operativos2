@@ -1,5 +1,7 @@
 Para compilar el server:
 gcc -o server server.c cJSON.c -L. -lemergency -lsupplies_update -lpossible_infection
+Para compilar en el observatorio:
+gcc -o server server.c cJSON.c -L. -lemergency -lsupplies_update -lpossible_infection -pthread
 
 
 Para compilar librería estática:
