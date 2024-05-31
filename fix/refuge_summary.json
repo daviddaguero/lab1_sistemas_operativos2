@@ -1,0 +1,18 @@
+{
+	"alerts":	{
+		"north_entry":	4,
+		"east_entry":	2,
+		"west_entry":	5,
+		"south_entry":	2
+	},
+	"supplies":	{
+		"food":	{
+		},
+		"medicine":	{
+		}
+	},
+	"emergency":	{
+		"last_keepalived":	"2024-05-27 21:49:10",
+		"last_event":	"EMERGENCY!!! POWER OUTAGES\n"
+	}
+}

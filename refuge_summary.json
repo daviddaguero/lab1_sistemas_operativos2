@@ -1,0 +1,25 @@
+{
+	"alerts":	{
+		"north_entry":	1,
+		"east_entry":	1,
+		"west_entry":	2,
+		"south_entry":	1
+	},
+	"supplies":	{
+		"food":	{
+			"meat":	65,
+			"vegetables":	78,
+			"fruits":	98,
+			"water":	12
+		},
+		"medicine":	{
+			"antibiotics":	32,
+			"analgesics":	69,
+			"bandages":	76
+		}
+	},
+	"emergency":	{
+		"last_keepalived":	"2024-05-09 20:44:23",
+		"last_event":	"EMERGENCY!!! OTHER CRITICAL SITUATIONS\n"
+	}
+}
