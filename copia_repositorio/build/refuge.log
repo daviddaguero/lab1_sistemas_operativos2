@@ -1,0 +1,40 @@
+2024-05-22 21:57:31, Alert of possible infection in north_entry.
+2024-05-22 21:57:41, Alert of possible infection in west_entry.
+2024-05-22 21:57:45, Connection from new client (TCP)
+2024-05-22 21:57:46, Alert of possible infection in south_entry.
+2024-05-22 21:57:47, Connection close from client (TCP)
+2024-05-22 21:57:51, Alert of possible infection in north_entry.
+2024-05-22 21:57:56, Alert of possible infection in east_entry.
+2024-05-22 21:57:59, Connection from new client (TCP)
+2024-05-22 21:58:01, Alert of possible infection in west_entry.
+2024-05-22 21:58:06, Alert of possible infection in south_entry.
+2024-05-22 21:58:07, Connection close from client (TCP)
+2024-05-22 21:58:07, Update of supplies from client (TCP)
+2024-05-22 21:58:11, Alert of possible infection in north_entry.
+2024-05-22 21:58:21, Alert of possible infection in west_entry.
+2024-05-22 21:58:24, Connection from new client (UDP)
+2024-05-22 21:58:31, Alert of possible infection in north_entry.
+2024-05-22 21:58:36, Alert of possible infection in east_entry.
+2024-05-22 21:58:41, Alert of possible infection in west_entry.
+EMERGENCY!!! 2024-05-22 21:59:00, OTHER CRITICAL SITUATIONS. Emergency notification sent to all connected clients.
+2024-05-22 21:59:01, Alert of possible infection in west_entry.
+2024-05-22 21:59:06, Alert of possible infection in south_entry.
+2024-05-22 21:59:16, Alert of possible infection in east_entry.
+2024-05-27 21:53:18, Alert of possible infection in north_entry.
+2024-05-27 21:53:28, Alert of possible infection in west_entry.
+2024-05-27 21:53:33, Alert of possible infection in south_entry.
+2024-05-27 21:53:38, Alert of possible infection in north_entry.
+2024-05-27 21:53:46, Connection from new client (TCP)
+2024-05-27 21:53:48, Alert of possible infection in west_entry.
+2024-05-27 21:53:56, Connection from new client (TCP)
+2024-05-27 21:53:58, Alert of possible infection in north_entry.
+2024-05-27 21:54:02, Connection close from client (TCP)
+2024-05-27 21:54:03, Alert of possible infection in east_entry.
+2024-05-27 21:54:08, Alert of possible infection in west_entry.
+2024-05-27 21:54:10, Connection from new client (TCP)
+2024-05-27 21:54:13, Alert of possible infection in south_entry.
+2024-05-27 21:54:23, Alert of possible infection in east_entry.
+2024-05-27 21:54:25, Connection close from client (TCP)
+2024-05-27 21:54:28, Alert of possible infection in west_entry.
+2024-05-27 21:54:30, Connection close from client (TCP)
+2024-05-27 21:54:38, Alert of possible infection in north_entry.

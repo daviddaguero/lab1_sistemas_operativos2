@@ -1,0 +1,20 @@
+{
+	"alerts":	{
+		"north_entry":	4,
+		"east_entry":	2,
+		"west_entry":	4,
+		"south_entry":	2
+	},
+	"supplies":	{
+		"food":	{
+		},
+		"medicine":	{
+		}
+	},
+	"emergency":	{
+		"last_keepalived":	{
+		},
+		"last_event":	{
+		}
+	}
+}

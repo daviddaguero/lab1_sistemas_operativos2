@@ -1,0 +1,2 @@
+/bin/ar qc libpossible_infection.a CMakeFiles/possible_infection.dir/src/possible_infection.c.o
+/bin/ranlib libpossible_infection.a

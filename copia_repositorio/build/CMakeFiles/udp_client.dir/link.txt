@@ -1,0 +1,1 @@
+/bin/cc CMakeFiles/udp_client.dir/src/udp_client.c.o CMakeFiles/udp_client.dir/src/cJSON.c.o -o udp_client
