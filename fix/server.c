@@ -36,7 +36,7 @@ typedef struct {
 #define SHM_SIZE sizeof(ClientInfo) * MAX_CLIENTS
 
 // Function prototypes
-int communication_with_client(int client_socket);
+int communication_with_client();
 void possible_infection_handler();
 void emergency_notification_handler();
 void sigint_handler(int sig);
@@ -54,6 +54,7 @@ int config_tcp_socket(struct sockaddr_in6 server_addr);
 int save_client_socket_in_clients_array(int client_socket);
 void max_clients_reached();
 void remove_client();
+int config_udp_socket();
 
 int server_socket, shmid;
 int fd[2]; // For pipe communication
@@ -191,14 +192,14 @@ int main() {
         if (pid == 0) { // Child process
             close(server_socket); // Close unused server socket in child process
             clients[position_clients_array].child_pid = getpid();
-            printf("Process %d: I saved my pid in the position %d of the clients array. Now clients[%d].child_pid = %d\n", getpid(), position_clients_array, position_clients_array, clients[position_clients_array].child_pid);
-            if(communication_with_client(client_socket)) {
+            // printf("Process %d: I saved my pid in the position %d of the clients array. Now clients[%d].child_pid = %d\n", getpid(), position_clients_array, position_clients_array, clients[position_clients_array].child_pid);
+            if(communication_with_client()) {
                 perror("Error in communication_with_client\n");
                 end_gracefully();
                 exit(EXIT_FAILURE);          
             }
             // Search the client file descriptor in the clients array
-            printf("Process %d: Searching the file descriptor of the client %d in the clients array\n", getpid(), client_socket);
+            // printf("Process %d: Searching the file descriptor of the client %d in the clients array\n", getpid(), client_socket);
             remove_client();
             exit(EXIT_SUCCESS);
         } else if (pid < 0) {
@@ -212,8 +213,15 @@ int main() {
     return 0;
 }
 
-// Function to manage communication with a client
-int communication_with_client(int client_socket) {
+/**
+ * communication_with_client
+ * 
+ * This function manages communication with a client through a given socket. It handles the reception and parsing of JSON data containing a username and password, 
+ * and based on the credentials provided, it either calls the supplies_update function to update supplies for an 'ubuntu' client or sends a summary JSON file to a normal client.
+ * 
+ * @return Returns 0 upon successful communication, or 1 if an error occurs during the process.
+ */
+int communication_with_client() {
     char buffer[BUFFER_SIZE];
     char username[BUFFER_SIZE], password[BUFFER_SIZE];
     int bytes_received;
@@ -314,12 +322,28 @@ int communication_with_client(int client_socket) {
     return 0;
 }
 
-// Signal handler for SIGINT (Control+C)
+/**
+ * sigint_handler
+ * 
+ * This function serves as a signal handler for the SIGINT signal (typically triggered by Control+C). 
+ * When the signal is caught, the function prints a message indicating the signal was caught and then calls the 
+ * end_gracefully function to perform any necessary cleanup before exiting the process.
+ * 
+ * @param sig An integer representing the signal number, specifically SIGINT in this case.
+ */
 void sigint_handler(int sig) {
     printf("\nProcess %d: Caught SIGINT signal. Exiting...\n", getpid());
     end_gracefully();
 }
 
+/**
+ * create_refuge_summary
+ * 
+ * This function creates and writes the JSON refuge summary file named "refuge_summary.json". The JSON structure includes
+ * sections for alerts, supplies, and emergency information.
+ * 
+ * @return Returns 0 upon successful creation and writing of the JSON file, or 1 if an error occurs during the process.
+ */
 int create_refuge_summary() {
     // printf("I am process: %d and I will write the file\n", getpid());
     // Open the file in write mode
@@ -382,6 +406,14 @@ int create_refuge_summary() {
     free(json_str);
 }
 
+/**
+ * supplies_update_log
+ * 
+ * This function logs an update of supplies to the log file "refuge.log".
+ * 
+ * @param protocol A string representing the communication protocol used by the client (e.g., "TCP").
+ * @return Returns 0 upon successful logging, or 1 if an error occurs while opening the log file.
+ */
 int supplies_update_log(const char *protocol) {
     char *time_str = get_current_time_str(date_format);    
     // Open the log file
@@ -394,6 +426,13 @@ int supplies_update_log(const char *protocol) {
     return 0;
 }
 
+/**
+ * get_current_time_str
+ * 
+ * This function retrieves the current local time and formats it as a string. 
+ * 
+ * @return Returns a pointer to a string containing the formatted current local time.
+ */
 char* get_current_time_str() {
     time_t current_time;
     struct tm *time_info;
@@ -404,6 +443,16 @@ char* get_current_time_str() {
     return time_str;
 }
 
+/**
+ * connection_log
+ * 
+ * This function logs connection events to the file "refuge.log". It records the current time, the type of event 
+ * (either "new" for new connections or "close" for closed connections), and the protocol used.
+ * 
+ * @param protocol A string representing the communication protocol used by the client (e.g., "TCP").
+ * @param type A string indicating the type of connection event ("new" for a new connection or "close" for a closed connection).
+ * @return Returns 0 upon successful logging, or 1 if an error occurs while opening the log file or if an invalid type is provided.
+ */
 int connection_log(const char *protocol, const char *type) {
     char *time_str = get_current_time_str(date_format);
 
@@ -427,6 +476,15 @@ int connection_log(const char *protocol, const char *type) {
     return 0;
 }
 
+/**
+ * sigusr1_handler
+ * 
+ * This function serves as a signal handler for the SIGUSR1 signal. When the signal is caught, it reads an emergency 
+ * message from a child process through a pipe, sends the emergency message to all connected clients, logs the 
+ * emergency event to a log file, and updates the refuge summary with the last emergency.
+ * 
+ * @param sig An integer representing the signal number, specifically SIGUSR1 in this case.
+ */
 void sigusr1_handler(int sig) {
     char buffer[BUFFER_SIZE];
     close(fd[1]); // Close the write end of the pipe in the parent
@@ -476,6 +534,13 @@ void sigusr1_handler(int sig) {
     }
 }
 
+/**
+ * end_gracefully
+ * 
+ * This function performs a graceful shutdown of the server, ensuring that all resources are properly released. It detaches 
+ * and removes the shared memory segment, closes and unlinks the semaphore, and closes various sockets and file descriptors 
+ * based on the process role (parent or child).
+ */
 void end_gracefully() {
     // Detach the shared memory segment
     shmdt(clients);
@@ -499,28 +564,20 @@ void end_gracefully() {
     exit(EXIT_SUCCESS);
 }
 
+/**
+ * udp_connections
+ * 
+ * This function handles UDP connections for a server. It creates a UDP socket, binds it to an IPv6 address and port, 
+ * and enters a loop to receive messages from clients. When a message is received, it logs the connection, processes 
+ * the message, and sends a JSON summary file back to the client.
+ */
 void udp_connections() {
-    struct sockaddr_in6 server_addr;
+    char buffer[BUFFER_SIZE];
     struct sockaddr_storage client_addr;
     socklen_t client_addr_len = sizeof(client_addr);
-    char buffer[BUFFER_SIZE];
 
-    // Create UDP socket
-    udp_socket = socket(AF_INET6, SOCK_DGRAM, 0);
-    if (udp_socket == -1) {
-        perror("Error creating UDP socket");
-        exit(EXIT_FAILURE);
-    }
-
-    // Initialize server address structure for IPv6
-    memset(&server_addr, 0, sizeof(server_addr));
-    server_addr.sin6_family = AF_INET6;
-    server_addr.sin6_addr = in6addr_any; // Bind to any available IPv6 address
-    server_addr.sin6_port = htons(UDP_PORT);
-
-    // Bind UDP socket to the specified address and port
-    if (bind(udp_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
-        perror("Error binding UDP socket");
+    if(config_udp_socket()) {
+        end_gracefully();
         exit(EXIT_FAILURE);
     }
 
@@ -693,16 +750,39 @@ void remove_client() {
     for (int i=0; i<MAX_CLIENTS;i++) {
         sem_wait(mutex);
         if(clients[i].client_socket == client_socket) {
-            printf("Process %d: I found the client %d in the position %d. clients[%d].client_socket = %d\n", getpid(), client_socket, i, i,
-                            clients[i].client_socket);
-            printf("Process %d: The pid of the child that served this client is: %d\n", getpid(), clients[i].child_pid);
+            // printf("Process %d: I found the client %d in the position %d. clients[%d].client_socket = %d\n", getpid(), client_socket, i, i, clients[i].client_socket);
+            // printf("Process %d: The pid of the child that served this client is: %d\n", getpid(), clients[i].child_pid);
             clients[i].client_socket = 0; // Delete the client socket to make this space available for another client 
             clients[i].child_pid = 0; // Delete the child's pid that was serving this client
-            printf("Process %d: Now clients[%d].client_socket = %d and clients[%d].child_pid = %d\n", getpid(), i, clients[i].client_socket, i,
-                            clients[i].child_pid);
+            // printf("Process %d: Now clients[%d].client_socket = %d and clients[%d].child_pid = %d\n", getpid(), i, clients[i].client_socket, i, clients[i].child_pid);
             sem_post(mutex);
             break;               
         }
         sem_post(mutex);
     }
+}
+
+int config_udp_socket() {
+    struct sockaddr_in6 server_addr;
+
+    // Create UDP socket
+    udp_socket = socket(AF_INET6, SOCK_DGRAM, 0);
+    if (udp_socket == -1) {
+        perror("Error creating UDP socket");
+        return 1;
+    }
+
+    // Initialize server address structure for IPv6
+    memset(&server_addr, 0, sizeof(server_addr));
+    server_addr.sin6_family = AF_INET6;
+    server_addr.sin6_addr = in6addr_any; // Bind to any available IPv6 address
+    server_addr.sin6_port = htons(UDP_PORT);
+
+    // Bind UDP socket to the specified address and port
+    if (bind(udp_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) {
+        perror("Error binding UDP socket");
+        return 1;
+    }
+
+    return 0;
 }

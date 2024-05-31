@@ -1,3 +1,0 @@
-/home/david/ingenieria_en_computacion/quinto_anio/sistemas_operativos2/practico/tps/lab1/2024/lab1_-daviddaguero/build/_deps/unity-subbuild/CMakeFiles/unity-populate.dir
-/home/david/ingenieria_en_computacion/quinto_anio/sistemas_operativos2/practico/tps/lab1/2024/lab1_-daviddaguero/build/_deps/unity-subbuild/CMakeFiles/edit_cache.dir
-/home/david/ingenieria_en_computacion/quinto_anio/sistemas_operativos2/practico/tps/lab1/2024/lab1_-daviddaguero/build/_deps/unity-subbuild/CMakeFiles/rebuild_cache.dir

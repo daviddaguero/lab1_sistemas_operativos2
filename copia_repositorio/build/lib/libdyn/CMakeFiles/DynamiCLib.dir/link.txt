@@ -1,1 +1,0 @@
-/bin/cc -fPIC -shared -Wl,-soname,libDynamiCLib.so -o libDynamiCLib.so CMakeFiles/DynamiCLib.dir/src/emergency.c.o

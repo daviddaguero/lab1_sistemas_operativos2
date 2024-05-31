@@ -1,1 +1,0 @@
-/bin/cc CMakeFiles/server.dir/src/server.c.o CMakeFiles/server.dir/src/cJSON.c.o -o server  -Wl,-rpath,/home/david/ingenieria_en_computacion/quinto_anio/sistemas_operativos2/practico/tps/lab1/2024/lab1_-daviddaguero/build/lib/libdyn lib/libsta/libpossible_infection.a lib/libsta/libsupplies_update.a lib/libdyn/libDynamiCLib.so

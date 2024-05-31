@@ -1,2 +1,0 @@
-/bin/ar qc libsupplies_update.a CMakeFiles/supplies_update.dir/src/supplies_update.c.o
-/bin/ranlib libsupplies_update.a
